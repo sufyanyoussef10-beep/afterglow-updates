@@ -1,6 +1,6 @@
 // Afterglow for iPhone: keeps the app's own files on the phone, so it opens with no internet.
 // (The songs are not here: they are kept by the page itself, in the phone's storage.)
-const CACHE = 'afterglow-shell-2';
+const CACHE = 'afterglow-shell-3';
 const FILES = ['./', 'manifest.webmanifest', 'icon-180.png', 'icon-512.png'];
 const OWN = FILES.map(f => new URL(f, self.registration.scope).href).concat(new URL('index.html', self.registration.scope).href);
 

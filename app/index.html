@@ -86,7 +86,14 @@
   #sheet { width: 100%; max-width: 640px; max-height: 80dvh; overflow-y: auto; background: var(--raised); border-radius: 16px 16px 0 0; padding: 10px 0 calc(var(--bottom) + 12px); }
   #sheet h3 { margin: 6px 20px 2px; font-size: 17px; } #sheet .sub { margin: 0 20px 8px; color: var(--dim); font-size: 14px; }
   #sheet .opt { display: flex; width: 100%; align-items: center; gap: 14px; text-align: start; padding: 14px 20px; font-size: 16px; } #sheet .opt:active { background: #ffffff10; } #sheet .opt.bad { color: #ff7b7b; }
-  #sheet .form { padding: 8px 20px 4px; display: flex; gap: 10px; } #sheet .form .field { flex: 1; }
+  #sheet .form { padding: 8px 20px 4px; display: flex; gap: 10px; } #sheet .form .field { flex: 1; min-width: 0; }
+  #sheet .opt span { display: flex; flex-direction: column; min-width: 0; } #sheet .opt small { color: var(--dim); font-size: 13px; } #sheet .opt svg { flex: none; color: var(--pink); }
+  #sheet .steps { margin: 10px 20px; padding: 12px 14px; border-radius: 10px; background: var(--raised2); font-size: 14px; color: var(--dim); -webkit-user-select: text; user-select: text; }
+  #sheet .steps b { color: var(--text); } #sheet .steps ol { margin: 6px 0 0; padding-inline-start: 20px; } #sheet .steps li { margin: 5px 0; } #sheet .steps a { color: var(--pink); font-weight: 600; }
+  #sheet .steps .ar { direction: rtl; text-align: right; margin-top: 10px; padding-top: 10px; border-top: 1px solid #ffffff1a; }
+  .seekbox { position: relative; height: 46px; margin-top: 4px; }
+  .seekbox canvas { position: absolute; left: 0; top: 0; width: 100%; height: 30px; pointer-events: none; }
+  .seekbox input[type=range] { position: absolute; left: 0; right: 0; bottom: 0; margin: 0; }
   #toast { margin: 0 16px 8px; background: #f3eff8; color: var(--ink); font-size: 14px; font-weight: 600; padding: 10px 14px; border-radius: 8px; text-align: center; }
   .row .t, .row .a, #mini .t, #mini .a, #player .name .t, #player .name .a, #sheet h3, #sheet .sub, .head h2 { text-align: left; }
 </style>
@@ -109,7 +116,7 @@
 <script>
 (() => {
 'use strict';
-const VERSION = '1.0.0';
+const VERSION = '1.1.0';
 const $ = (s, r = document) => r.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const clock = s => { s = Math.max(0, Math.floor(s || 0)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
@@ -131,6 +138,7 @@ const I = {
   repeatOne: svg('<path d="M7 7h10a3 3 0 0 1 3 3v2M17 17H7a3 3 0 0 1-3-3v-2M14 4l3 3-3 3M10 20l-3-3 3-3M11.500 10.500l1-.700V14.500"/>', true),
   note: svg('<path d="M9 18V6l10-2v11"/><circle cx="6.500" cy="18" r="2.500"/><circle cx="16.500" cy="15" r="2.500"/>', true),
   list: svg('<path d="M4 7h11M4 12h11M4 17h7M18 10v8M18 10l3 1"/><circle cx="16.200" cy="18" r="1.800"/>', true),
+  get: svg('<path d="M12 4v11M7.500 11l4.500 4.500 4.500-4.500M5 20h14"/>', true), folder: svg('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>', true),
 };
 
 // ------------------------------------------------------------------ storage (everything stays on this phone)
@@ -347,8 +355,8 @@ function render() {
     if (S.view === 'playlist') { const p = S.playlists.find(p => p.id === S.playlist);
       html = '<div class="head"><button class="pill" data-do="view" data-view="playlists">' + I.back + 'Playlists</button><h2 dir="auto" style="margin-top:12px">' + esc(p ? p.name : '') + '</h2><div class="a">' + count(ids.length, 'song') +
         '</div><div class="do"><button class="pill main" data-do="play-all">' + I.play + 'Play</button><button class="pill" data-do="shuffle-all">' + I.shuffle + 'Shuffle</button><span style="flex:1"></span><button class="icon" data-do="playlist-menu" aria-label="Playlist options">' + I.more + '</button></div></div>'; }
-    if (!S.songs.size) html += '<div class="empty"><h2>Add your music</h2><p>Pick music files from this phone (MP3, M4A…). Afterglow keeps them here and plays them with no internet.</p>' +
-      '<p class="ar" lang="ar">اختاري ملفات الموسيقى من هذا الهاتف. يحتفظ بها Afterglow هنا ويشغّلها بلا إنترنت.</p><button class="pill main" data-do="add">' + I.plus + 'Add music</button></div>';
+    if (!S.songs.size) html += '<div class="empty"><h2>Add your music</h2><p>Download a song from a link or by its name, or pick music files from this phone. Afterglow keeps them here and plays them with no internet.</p>' +
+      '<p class="ar" lang="ar">نزّلي أغنية من رابط أو باسمها، أو اختاري ملفات الموسيقى من هذا الهاتف. يحتفظ بها Afterglow هنا ويشغّلها بلا إنترنت.</p><button class="pill main" data-do="add">' + I.plus + 'Add music</button></div>';
     else if (!ids.length) html += '<div class="empty"><p>' + (S.q ? 'No song matches “' + esc(S.q) + '”.' : S.view === 'liked' ? 'Songs you like show here. Tap the heart in the player.' : 'This playlist is empty. Add songs from their ⋮ menu.') + '</p></div>';
     else html += ids.map(rowOf).join('');
   }
@@ -377,16 +385,70 @@ function renderPlayer() {
     '<div class="coverbox">' + (coverUrl ? '<img class="cover" src="' + coverUrl + '" alt="">' : art(s, 'cover')) + '</div>' +
     '<div class="name"><div class="what"><div class="t one" dir="auto">' + esc(s.title) + '</div><div class="a one" dir="auto">' + esc(s.artist || 'Unknown artist') + '</div></div>' +
     '<button class="icon' + (s.liked ? ' liked' : '') + '" data-do="like" aria-label="' + (s.liked ? 'Remove from Liked' : 'Like') + '">' + (s.liked ? I.heart : I.heartLine) + '</button></div>' +
-    '<input type="range" id="seek" min="0" max="1000" value="0" aria-label="Where the song is"><div class="times"><span id="now">0:00</span><span id="end">' + clock(s.duration) + '</span></div>' +
+    '<div class="seekbox"><canvas id="wave"></canvas><input type="range" id="seek" min="0" max="1000" value="0" aria-label="Where the song is"></div><div class="times"><span id="now">0:00</span><span id="end">' + clock(s.duration) + '</span></div>' +
     '<div class="keys"><button class="icon small' + (S.shuffle ? ' on' : '') + '" data-do="shuffle" aria-label="Shuffle" aria-pressed="' + S.shuffle + '">' + I.shuffle + '</button><button class="icon" data-do="prev" aria-label="Previous">' + I.prev +
     '</button><button class="icon big" data-do="toggle" aria-label="' + (S.playing ? 'Pause' : 'Play') + '">' + (S.playing ? I.pause : I.play) + '</button><button class="icon" data-do="next" aria-label="Next">' + I.next +
     '</button><button class="icon small' + (S.repeat ? ' on' : '') + '" data-do="repeat" aria-label="' + ['Repeat', 'Repeating all', 'Repeating this song'][S.repeat] + '">' + (S.repeat === 2 ? I.repeatOne : I.repeat) + '</button></div>';
   const seek = $('#seek');
   seek.addEventListener('input', () => { seeking = true; const d = audio.duration || s.duration || 0; $('#now').textContent = clock(seek.value / 1000 * d); seek.style.setProperty('--p', seek.value / 10 + '%'); });
   seek.addEventListener('change', () => { const d = audio.duration || 0; if (d) { audio.currentTime = seek.value / 1000 * d; lastTime = audio.currentTime; } seeking = false; });
-  progress();
+  progress(); waves();
 }
-function openPlayer() { S.open = true; renderPlayer(); const p = $('#player'); p.classList.add('open'); p.setAttribute('aria-hidden', 'false'); }
+
+// ------------------------------------------------------------------ the waves on the seek bar
+// Three soft layers of light in the colours of the song's own cover rise from the played part of the bar and
+// flow towards the thumb while the music plays; paused, they settle into the bar. With "Reduce Motion" on
+// the phone the bar stays flat. They are decoration: where the thumb stands always comes from the player.
+const calm = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+const LAYERS = [
+  { tall: 1.00, length: 150, speed: 1.26, shift: 0.0, crest: 0.45, alpha: 0.80, turn: 16, pale: 0, span: 300, drift: 14, start: 0.00 },
+  { tall: 0.74, length: 105, speed: 2.39, shift: 1.9, crest: 0.30, alpha: 0.90, turn: 0, pale: 0, span: 250, drift: 22, start: 0.85 },
+  { tall: 0.48, length: 72, speed: 4.54, shift: 4.1, crest: 0.75, alpha: 0.92, turn: -14, pale: 0.42, span: 210, drift: 34, start: 1.45 },
+];
+const tide = { life: 0, time: 0, last: 0, frame: 0 };
+const smooth = v => { v = Math.max(0, Math.min(1, v)); return v * v * (3 - 2 * v); };
+function waves() { if (!tide.frame && S.open) tide.frame = requestAnimationFrame(drawWaves); }
+function drawWaves(now) {
+  tide.frame = 0;
+  const c = $('#wave'), seek = $('#seek'), s = current();
+  if (!c || !seek || !s || !S.open) { tide.last = 0; return; }
+  const step = Math.min(0.1, tide.last ? (now - tide.last) / 1000 : 0); tide.last = now;
+  const goal = S.playing && !calm ? 1 : 0;
+  tide.life += (goal - tide.life) * Math.min(1, step * 3.5);
+  if (goal) tide.time += step;
+  const box = c.getBoundingClientRect(), k = window.devicePixelRatio || 1, w = box.width, h = box.height;
+  if (c.width !== Math.round(w * k) || c.height !== Math.round(h * k)) { c.width = Math.round(w * k); c.height = Math.round(h * k); }
+  const g = c.getContext('2d'); g.setTransform(k, 0, 0, k, 0, 0); g.clearRect(0, 0, w, h);
+  const played = 7 + (seek.value / 1000) * (w - 14), rise = 30, fall = 22;
+  const tallest = 14 * tide.life * Math.max(0, Math.min(1, played / (rise + fall)));
+  if (tallest > 0.5) {
+    const grey = s.hue === -2, hue = hueOf(s);
+    const shade = (layer, by) => grey ? 'hsl(0 0% ' + (78 + layer.pale * 22 + by * 0.3) + '%)' : 'hsl(' + ((hue + layer.turn + by + 360) % 360) + ' 90% ' + (63 + layer.pale * 26) + '%)';
+    for (const layer of LAYERS) {
+      const wide = 2 * Math.PI / layer.length, turn = tide.time * layer.speed, tall = tallest * layer.tall;
+      g.beginPath(); g.moveTo(0, h);
+      const top = [];
+      for (let x = 0; ; x += 2) {
+        const at = Math.min(x, played), body = smooth(at / rise) * smooth((played - at) / fall);
+        // Two waves of different lengths, both moving towards the thumb: the shape never repeats exactly.
+        const wave = 0.22 + 0.78 * (0.62 * (0.5 + 0.5 * Math.sin(wide * at - turn + layer.shift)) + 0.38 * (0.5 + 0.5 * Math.sin(1.7 * wide * at - 1.35 * turn + 2.1 * layer.shift)));
+        const y = h - tall * wave * body; g.lineTo(at, y); top.push(at, y);
+        if (x >= played) break;
+      }
+      g.lineTo(played, h); g.closePath();
+      // Its colour goes through the neighbouring shades and back, and the shades drift towards the thumb.
+      const period = 2 * layer.span, moved = (layer.start * layer.span + tide.time * layer.drift) % period, times = Math.ceil((w + period) / period) + 1;
+      const paint = g.createLinearGradient(moved - period, 0, moved - period + period * times, 0);
+      for (let i = 0; i <= times; i++) { paint.addColorStop(Math.min(1, i / times), shade(layer, -12)); if (i < times) paint.addColorStop((i + 0.5) / times, shade(layer, 12)); }
+      g.globalAlpha = layer.alpha; g.fillStyle = paint; g.fill();
+      g.beginPath(); g.moveTo(top[0], top[1]); for (let i = 2; i < top.length; i += 2) g.lineTo(top[i], top[i + 1]);
+      g.globalAlpha = Math.min(1, layer.crest * tide.life) * 0.6; g.strokeStyle = '#fff'; g.lineWidth = 1; g.lineJoin = 'round'; g.stroke();
+    }
+    g.globalAlpha = 1;
+  }
+  if (goal || tide.life > 0.004) tide.frame = requestAnimationFrame(drawWaves); else { tide.life = 0; tide.last = 0; }
+}
+function openPlayer() { S.open = true; renderPlayer(); const p = $('#player'); p.classList.add('open'); p.setAttribute('aria-hidden', 'false'); waves(); }
 function closePlayer() { S.open = false; const p = $('#player'); p.classList.remove('open'); p.setAttribute('aria-hidden', 'true'); }
 let seeking = false;
 function progress() {
@@ -467,8 +529,8 @@ audio.addEventListener('timeupdate', () => {
   lastTime = t; progress();
 });
 audio.addEventListener('loadedmetadata', () => { const s = current(); if (s && playingUrl && isFinite(audio.duration) && Math.abs(s.duration - audio.duration) > 1) { s.duration = audio.duration; saveSong(s); } position(); });
-audio.addEventListener('playing', () => { if (!playingUrl) return; S.playing = true; switching = false; refresh(); lockScreen(); });
-audio.addEventListener('pause', () => { if (switching || !playingUrl) return; S.playing = false; refresh(); remember(); });
+audio.addEventListener('playing', () => { if (!playingUrl) return; S.playing = true; switching = false; refresh(); lockScreen(); waves(); });
+audio.addEventListener('pause', () => { if (switching || !playingUrl) return; S.playing = false; refresh(); remember(); waves(); });
 audio.addEventListener('ended', () => { if (playingUrl && following() >= 0 && !switching) { audio.loop = true; advance(true); return; } S.playing = false; refresh(); remember(); });
 audio.addEventListener('error', () => { if (playingUrl && audio.currentSrc === playingUrl) { toast("This song can't be played here"); switching = false; } });
 
@@ -515,6 +577,43 @@ function namePlaylist(title, value, action, extra) {
   $('#name').addEventListener('keydown', e => { if (e.key === 'Enter') $('#sheet .pill.main').click(); });
 }
 const savePlaylist = p => put('playlists', p);
+
+// ------------------------------------------------------------------ downloading a song
+// A web page cannot fetch a song from YouTube and the like by itself. The free App Store app "a-Shell" can:
+// it runs the downloader (yt-dlp) on the phone. This page hands it the link or the song's name through a
+// link of its own kind (ashell:command), a-Shell saves the song into its folder "Afterglow", and the
+// listener adds it from there with "Add music".
+const HELPER = new URL('afterglow.py', location.href).href;
+let fetching = false;
+function addSheet() {
+  sheet('<h3>Add music</h3><button class="opt" data-do="pick">' + I.folder + '<span><b>From this phone</b><small>Music files in the Files app (MP3, M4A…)</small></span></button>' +
+    '<button class="opt" data-do="get">' + I.get + '<span><b>Download a song</b><small>From a link, or by its name</small></span></button>');
+}
+function getSheet() {
+  sheet('<h3>Download a song</h3><p class="sub">Paste a link (YouTube, SoundCloud, TikTok…) or type the song’s name.</p>' +
+    '<div class="form"><input class="field" id="link" placeholder="Link or song name" enterkeyhint="go" autocapitalize="off" autocorrect="off" spellcheck="false" dir="auto"><button class="pill main" data-do="download">Download</button></div>' +
+    '<div class="steps"><b>How it works</b><ol><li>Once: install the free app <a href="https://apps.apple.com/app/id1543537943" target="_blank" rel="noopener">a-Shell mini</a> from the App Store.</li>' +
+    '<li>Tap Download. a-Shell opens and puts the song on this phone. The first time takes a minute or two.</li>' +
+    '<li>When it says “Saved”, come back here and tap “Add the downloaded songs”. Choose a-Shell, then Afterglow, and pick them.</li></ol>' +
+    '<div class="ar" lang="ar">١. مرة واحدة: ثبّتي التطبيق المجاني a-Shell mini من App Store.<br>٢. اضغطي Download: يفتح a-Shell وينزّل الأغنية على الهاتف. أول مرة تأخذ دقيقة أو اثنتين.<br>٣. عندما يكتب Saved ارجعي إلى هنا واضغطي الزر الأخير في هذه الصفحة، ثم اختاري a-Shell ثم Afterglow وحدّدي الأغاني.</div></div>' +
+    '<button class="opt" data-do="pick">' + I.folder + '<span><b>Add the downloaded songs</b><small>a-Shell › Afterglow. Songs already added are skipped.</small></span></button>');
+  $('#link').addEventListener('keydown', e => { if (e.key === 'Enter') $('#sheet [data-do=download]').click(); });
+}
+function download(text) {
+  const hex = Array.from(new TextEncoder().encode(text)).map(b => b.toString(16).padStart(2, '0')).join('');
+  // One command, without anything a shell could take for its own: the helper is read from this site and run, with the request as hex digits.
+  const command = 'python3 -c "exec(__import__(\'urllib.request\').request.urlopen(\'' + HELPER + '\').read())" ' + hex;
+  fetching = true;
+  location.href = 'ashell:' + encodeURIComponent(command);
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden || !fetching) return;                         // back from a-Shell
+  fetching = false;
+  sheet('<h3>Back from a-Shell?</h3><p class="sub">If it said “Saved”, add the song now. Choose a-Shell, then Afterglow.</p>' +
+    '<button class="opt" data-do="pick">' + I.folder + '<span><b>Add the downloaded songs</b><small>Songs already added are skipped.</small></span></button>' +
+    '<button class="opt" data-do="get">' + I.get + '<span><b>Download another</b></span></button>' +
+    '<p class="sub" style="margin-top:8px">After adding, you can delete the copies in the a-Shell folder (Files app) to save room.</p>');
+});
 async function removeSong(id) {
   const now = current() && current().id === id;
   await run(['songs', 'audio', 'covers'], 'readwrite', t => { t.objectStore('songs').delete(id); t.objectStore('audio').delete(id); t.objectStore('covers').delete(id); });
@@ -535,7 +634,10 @@ document.addEventListener('click', e => {
   const act = el.dataset.do, id = el.dataset.id;
   if (act !== 'delete') sure = '';
   switch (act) {
-    case 'add': $('#files').click(); break;
+    case 'add': addSheet(); break;
+    case 'pick': closeSheet(); $('#files').click(); break;
+    case 'get': getSheet(); break;
+    case 'download': { const text = $('#link').value.trim(); if (!text) { $('#link').focus(); break; } closeSheet(); download(text); break; }
     case 'view': S.view = el.dataset.view; if (S.view !== 'playlist') S.playlist = null; render(); $('#list').scrollTop = 0; break;
     case 'sort': S.sort = S.sort === 'az' ? 'recent' : 'az'; remember(); render(); break;
     case 'play': playList(shown(), id, labelOf()); break;
@@ -587,7 +689,7 @@ $('#files').addEventListener('change', e => { const f = Array.from(e.target.file
       '<div class="ar" lang="ar">ضعي Afterglow على الشاشة الرئيسية أولاً: من Safari اضغطي مشاركة ثم «إضافة إلى الشاشة الرئيسية»، وأضيفي أغانيك هناك.</div></div><button data-do="hide-hint" aria-label="Hide this">' + I.close + '</button>'; }
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 })();
-window.__afterglow = { S, importFiles, audio, version: VERSION };       // for checking the page itself
+window.__afterglow = { S, importFiles, audio, version: VERSION, tide, helper: HELPER };       // for checking the page itself
 })();
 </script>
 </body>
